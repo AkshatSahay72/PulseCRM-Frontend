@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}Segments | PulseCRM{% endblock %}
+{% block page_header %}Audience Segments{% endblock %}
+
+{% block content %}
+<!-- Alerts container -->
+<div id="alerts-container"></div>
+
+<!-- AI Segment Builder Card -->
+<div class="card border-0 shadow-sm p-4 mb-4">
+    <h6 class="font-weight-bold text-main mb-3">
+        <i class="bi bi-magic text-primary me-2"></i>AI-Powered Audience Segment Builder
+    </h6>
+    <form id="ai-segment-form">
+        <div class="input-group mb-3">
+            <input type="text" id="ai-prompt-input" class="form-control" required placeholder="Describe the segment you want to build (e.g. customers with at least 2 orders who spent over 100)">
+            <button type="submit" class="btn btn-primary" id="build-segment-btn">
+                <i class="bi bi-cpu-fill me-1"></i>Generate Segment
+            </button>
+        </div>
+    </form>
+    
+    <!-- Suggestions -->
+    <div class="d-flex align-items-center flex-wrap gap-2">
+        <span class="small text-muted me-2">Suggestions:</span>
+        <button class="btn btn-sm btn-light border prompt-suggestion-chip">customers with at least 2 orders who spent over 100</button>
+        <button class="btn btn-sm btn-light border prompt-suggestion-chip">customers with at least 1 order who spent over 50</button>
+        <button class="btn btn-sm btn-light border prompt-suggestion-chip">new customers with 0 orders</button>
+    </div>
+</div>
+
+<!-- Segments List Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card p-0 border-0 shadow-sm">
+            <div class="card-header bg-white py-3 border-bottom">
+                <h6 class="m-0 font-weight-bold text-main">Saved Audience Segments</h6>
+            </div>
+            <div class="table-responsive">
+                <table class="table align-middle table-hover">
+                    <thead>
+                        <tr>
+                            <th style="width: 80px;">ID</th>
+                            <th>Segment Name</th>
+                            <th>Description</th>
+                            <th>Matching Rules</th>
+                            <th class="text-end text-nowrap" style="width: 320px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="segments-table-body">
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-5">
+                                <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                                Loading saved segments...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Audience Preview -->
+<div class="modal fade" id="previewAudienceModal" tabindex="-1" aria-labelledby="previewAudienceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-bottom">
+                <div>
+                    <h5 class="modal-title font-weight-bold mb-1" id="previewAudienceModalLabel">Audience Preview</h5>
+                    <p class="text-muted small m-0" id="preview-segment-desc"></p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0" style="max-height: 400px; overflow-y: auto;">
+                <table class="table align-middle table-hover m-0">
+                    <thead class="sticky-top bg-light">
+                        <tr>
+                            <th style="width: 80px; background-color: #f8fafc;">ID</th>
+                            <th style="background-color: #f8fafc;">Name</th>
+                            <th style="background-color: #f8fafc;">Email</th>
+                        </tr>
+                    </thead>
+                    <tbody id="audience-preview-tbody">
+                        <!-- Populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer bg-light border-top">
+                <span class="text-muted small me-auto" id="preview-count-label">0 contacts matched</span>
+                <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Segment Analytics -->
+<div class="modal fade" id="segmentAnalyticsModal" tabindex="-1" aria-labelledby="segmentAnalyticsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title font-weight-bold" id="segmentAnalyticsModalLabel">Segment Performance Analytics</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4" id="segment-analytics-body">
+                <!-- Populated dynamically -->
+            </div>
+            <div class="modal-footer bg-light border-top">
+                <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/segments.js') }}"></script>
+{% endblock %}

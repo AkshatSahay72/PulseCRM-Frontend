@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard | PulseCRM{% endblock %}
+{% block page_header %}Dashboard Overview{% endblock %}
+
+{% block content %}
+<!-- KPI Cards Row -->
+<div class="row g-4 mb-4">
+    <!-- Total Customers -->
+    <div class="col-12 col-md-4">
+        <div class="card-stats">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="card-title">Total Customers</div>
+                    <div class="card-value" id="kpi-customers">-</div>
+                    <div class="card-desc">Registered contacts in system</div>
+                </div>
+                <div class="fs-1 text-primary opacity-25">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Campaigns Created -->
+    <div class="col-12 col-md-4">
+        <div class="card-stats">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="card-title">Total Campaigns</div>
+                    <div class="card-value" id="kpi-campaigns">-</div>
+                    <div class="card-desc">Marketing campaigns created</div>
+                </div>
+                <div class="fs-1 text-primary opacity-25">
+                    <i class="bi bi-envelope-paper-fill"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Messages Sent -->
+    <div class="col-12 col-md-4">
+        <div class="card-stats">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="card-title">Messages Triggered</div>
+                    <div class="card-value" id="kpi-messages">-</div>
+                    <div class="card-desc">Total dispatched communications</div>
+                </div>
+                <div class="fs-1 text-primary opacity-25">
+                    <i class="bi bi-send-fill"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Funnel Chart and Performance Rates Row -->
+<div class="row g-4 mb-4">
+    <!-- Marketing Funnel Chart -->
+    <div class="col-12 col-lg-8">
+        <div class="card-chart-container h-100">
+            <h6 class="mb-3 font-weight-bold text-main">Engagement Funnel Analysis</h6>
+            <div style="position: relative; height: 300px;">
+                <canvas id="funnelChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Rates Summary -->
+    <div class="col-12 col-lg-4">
+        <div class="card-chart-container h-100 d-flex flex-column justify-content-between">
+            <div>
+                <h6 class="mb-4 font-weight-bold text-main">Performance Benchmarks</h6>
+                
+                <!-- Delivery Rate -->
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="small font-weight-semibold">Delivery Rate</span>
+                        <span class="small font-weight-semibold" id="rate-delivery-pct">-</span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-success" id="rate-delivery-bar" role="progressbar" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Open Rate -->
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="small font-weight-semibold">Open Rate</span>
+                        <span class="small font-weight-semibold" id="rate-open-pct">-</span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-primary" id="rate-open-bar" role="progressbar" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Click Rate -->
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="small font-weight-semibold">Click-Through Rate</span>
+                        <span class="small font-weight-semibold" id="rate-click-pct">-</span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-info" id="rate-click-bar" role="progressbar" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="alert alert-light border m-0 p-2 small mt-3">
+                <i class="bi bi-info-circle text-primary me-1"></i> Rates computed dynamically from live campaign logs.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Campaigns Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card p-0 border-0 shadow-sm">
+            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                <h6 class="m-0 font-weight-bold text-main">Recent Campaigns</h6>
+                <a href="{{ url_for('campaigns') }}" class="btn btn-sm btn-outline-primary">Manage Campaigns</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table align-middle table-hover">
+                    <thead>
+                        <tr>
+                            <th>Campaign Name</th>
+                            <th>Subject</th>
+                            <th>Segment ID</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recent-campaigns-table">
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">
+                                <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                                Fetching campaign list...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Dashboard JS Logic -->
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

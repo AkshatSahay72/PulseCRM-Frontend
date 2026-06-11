@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}PulseCRM Dashboard{% endblock %}</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Custom Style -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block styles %}{% endblock %}
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <i class="bi bi-activity text-primary me-2"></i>PulseCRM
+            </div>
+            <ul class="sidebar-menu">
+                <li class="sidebar-item">
+                    <a href="{{ url_for('dashboard') }}" class="sidebar-link {% if request.path == '/dashboard' or request.path == '/' %}active{% endif %}">
+                        <i class="bi bi-speedometer2"></i>Dashboard
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="{{ url_for('customers') }}" class="sidebar-link {% if request.path == '/customers' %}active{% endif %}">
+                        <i class="bi bi-people"></i>Customers
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="{{ url_for('segments') }}" class="sidebar-link {% if request.path == '/segments' %}active{% endif %}">
+                        <i class="bi bi-diagram-3"></i>Segments
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="{{ url_for('campaigns') }}" class="sidebar-link {% if request.path == '/campaigns' %}active{% endif %}">
+                        <i class="bi bi-envelope-paper"></i>Campaigns
+                    </a>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Top Navbar -->
+            <header class="navbar-top">
+                <h5 class="m-0 font-weight-bold">{% block page_header %}Dashboard{% endblock %}</h5>
+                <div class="d-flex align-items-center">
+                    <span id="connection-badge" class="badge bg-warning-subtle text-warning border border-warning-subtle px-3 py-2">
+                        <i class="spinner-border spinner-border-sm me-1" role="status" style="width: 0.75rem; height: 0.75rem; border-width: 0.15em;"></i>Connecting...
+                    </span>
+                </div>
+            </header>
+
+            <!-- Page Body -->
+            <div class="content-body">
+                <div id="global-connection-alert" class="d-none"></div>
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+
+    <!-- Bootstrap 5 Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    
+    <!-- Central Configuration Global Variable -->
+    <script>
+        const API_BASE_URL = "{{ API_BASE_URL }}";
+
+        // Global backend wakeup / ping check
+        document.addEventListener("DOMContentLoaded", () => {
+            const badge = document.getElementById("connection-badge");
+            const alertContainer = document.getElementById("global-connection-alert");
+            
+            if (!badge) return;
+
+            let wasSleeping = false;
+            
+            // Show wake-up warning banner if backend takes more than 1.5s to respond
+            const sleepTimeout = setTimeout(() => {
+                wasSleeping = true;
+                if (alertContainer) {
+                    alertContainer.innerHTML = `
+                        <div class="alert alert-warning border-0 shadow-sm d-flex align-items-center mb-4 py-3">
+                            <div class="spinner-border spinner-border-sm text-warning me-3" role="status"></div>
+                            <div>
+                                <strong class="text-warning-emphasis">Waking up backend server...</strong><br>
+                                <span class="text-muted small">Our API is hosted on Render's free tier and spins down when inactive. This first load can take up to 50 seconds. Please keep this tab open.</span>
+                            </div>
+                        </div>
+                    `;
+                    alertContainer.classList.remove("d-none");
+                }
+                badge.className = "badge bg-warning-subtle text-warning border border-warning-subtle px-3 py-2";
+                badge.innerHTML = '<i class="spinner-border spinner-border-sm me-1" role="status" style="width: 0.75rem; height: 0.75rem; border-width: 0.15em;"></i>Waking Backend...';
+            }, 1500);
+
+            // Clean health check endpoint: root of backend (API_BASE_URL minus /api/v1)
+            const rootUrl = API_BASE_URL.replace(/\/api\/v1\/?$/, "");
+            
+            // Start pinging
+            function checkConnection() {
+                fetch(rootUrl || API_BASE_URL)
+                    .then(response => {
+                        clearTimeout(sleepTimeout);
+                        
+                        // Set badge to connected
+                        badge.className = "badge bg-success-subtle text-success border border-success-subtle px-3 py-2";
+                        badge.innerHTML = '<i class="bi bi-cloud-check-fill me-1"></i>Backend Connected';
+                        
+                        if (wasSleeping) {
+                            // Backend just woke up. Show a quick status and reload
+                            if (alertContainer) {
+                                alertContainer.innerHTML = `
+                                    <div class="alert alert-success border-0 shadow-sm d-flex align-items-center mb-4 py-3">
+                                        <i class="bi bi-check-circle-fill text-success fs-4 me-3"></i>
+                                        <div>
+                                            <strong class="text-success-emphasis">Backend Active!</strong><br>
+                                            <span class="text-muted small">Server woke up successfully. Reloading page to fetch fresh data...</span>
+                                        </div>
+                                    </div>
+                                `;
+                            }
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 1000);
+                        } else {
+                            if (alertContainer) {
+                                alertContainer.classList.add("d-none");
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Backend ping failed:", error);
+                        // If it has already been flagged as sleeping, retry pinging every 3 seconds
+                        if (wasSleeping) {
+                            setTimeout(checkConnection, 3000);
+                        } else {
+                            // If it failed immediately, show offline error
+                            clearTimeout(sleepTimeout);
+                            badge.className = "badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2";
+                            badge.innerHTML = '<i class="bi bi-cloud-slash-fill me-1"></i>Backend Offline';
+                            if (alertContainer) {
+                                alertContainer.innerHTML = `
+                                    <div class="alert alert-danger border-0 shadow-sm d-flex align-items-center mb-4 py-3">
+                                        <i class="bi bi-exclamation-triangle-fill text-danger fs-4 me-3"></i>
+                                        <div>
+                                            <strong class="text-danger-emphasis">Backend Connection Failed</strong><br>
+                                            <span class="text-muted small">Could not connect to the backend API at <code>\${API_BASE_URL}</code>. Please check if the backend service is running.</span>
+                                            <button class="btn btn-sm btn-outline-danger ms-3 mt-1" onclick="window.location.reload()">Retry Connection</button>
+                                        </div>
+                                    </div>
+                                `;
+                                alertContainer.classList.remove("d-none");
+                            }
+                        }
+                    });
+            }
+
+            checkConnection();
+        });
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
