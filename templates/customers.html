@@ -18,6 +18,9 @@
         </div>
     </div>
     <div class="col-12 col-md-6 text-md-end">
+        <button type="button" class="btn btn-outline-primary me-2" data-bs-toggle="modal" data-bs-target="#importCustomersModal">
+            <i class="bi bi-file-earmark-arrow-up-fill me-2"></i>Import (CSV/JSON)
+        </button>
         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCustomerModal">
             <i class="bi bi-person-plus-fill me-2"></i>Add Customer
         </button>
@@ -128,6 +131,56 @@
                 <div class="modal-footer bg-light border-top">
                     <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary" id="save-order-btn">Record Purchase</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Import Customers -->
+<div class="modal fade" id="importCustomersModal" tabindex="-1" aria-labelledby="importCustomersModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title font-weight-bold" id="importCustomersModalLabel">Import Customers (CSV / JSON)</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="import-customers-form">
+                <div class="modal-body p-4">
+                    <div class="mb-4">
+                        <label for="import-file-input" class="form-label font-weight-semibold small">Choose CSV or JSON File</label>
+                        <input class="form-control" type="file" id="import-file-input" accept=".csv,.json" required>
+                        <div class="form-text small text-muted mt-2">
+                            <i class="bi bi-info-circle me-1"></i>Any headers are supported! Names, emails, and phones will be auto-matched.
+                        </div>
+                    </div>
+
+                    <!-- Live Preview Panel (hidden initially) -->
+                    <div id="import-preview-panel" class="d-none">
+                        <h6 class="font-weight-bold text-main mb-3 small uppercase text-muted d-flex justify-content-between">
+                            <span>Auto-Mapped Data Preview (First 5 Rows)</span>
+                            <span id="import-total-badge" class="badge bg-primary">0 records parsed</span>
+                        </h6>
+                        <div class="table-responsive border p-0 rounded shadow-xs mb-3" style="max-height: 250px;">
+                            <table class="table align-middle table-hover m-0 small">
+                                <thead class="sticky-top bg-light">
+                                    <tr>
+                                        <th style="background-color: #f8fafc;">Mapped First Name</th>
+                                        <th style="background-color: #f8fafc;">Mapped Last Name</th>
+                                        <th style="background-color: #f8fafc;">Mapped Email</th>
+                                        <th style="background-color: #f8fafc;">Mapped Phone</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="import-preview-tbody">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-top">
+                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="import-submit-btn" disabled>Upload & Import</button>
                 </div>
             </form>
         </div>

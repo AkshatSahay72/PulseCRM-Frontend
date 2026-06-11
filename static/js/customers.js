@@ -288,4 +288,230 @@ document.addEventListener("DOMContentLoaded", () => {
         };
         return text.replace(/[&<>"']/g, m => map[m]);
     }
+
+    // --- Dynamic Bulk Customer Import ---
+    const BULK_API_URL = `${API_BASE_URL}/customers/bulk`;
+    const importFileInput = document.getElementById("import-file-input");
+    const importSubmitBtn = document.getElementById("import-submit-btn");
+    const importPreviewPanel = document.getElementById("import-preview-panel");
+    const importPreviewTbody = document.getElementById("import-preview-tbody");
+    const importTotalBadge = document.getElementById("import-total-badge");
+    const importForm = document.getElementById("import-customers-form");
+    
+    let parsedRecords = [];
+
+    if (importFileInput) {
+        importFileInput.addEventListener("change", (e) => {
+            const file = e.target.files[0];
+            if (!file) {
+                resetImportModal();
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const text = evt.target.result;
+                try {
+                    if (file.name.endsWith(".json")) {
+                        parsedRecords = JSON.parse(text);
+                        if (!Array.isArray(parsedRecords)) {
+                            throw new Error("JSON file must be an array of customer objects.");
+                        }
+                    } else {
+                        parsedRecords = parseCSV(text);
+                    }
+
+                    if (parsedRecords.length === 0) {
+                        throw new Error("No customer rows detected in the file.");
+                    }
+
+                    // Render Preview (up to first 5 rows)
+                    importPreviewTbody.innerHTML = "";
+                    const previewRows = parsedRecords.slice(0, 5);
+                    
+                    previewRows.forEach(row => {
+                        const mapped = mapRecordFuzzy(row);
+                        const tr = document.createElement("tr");
+                        tr.innerHTML = `
+                            <td><span class="${mapped.first_name ? 'text-dark font-weight-medium' : 'text-danger small'}">${escapeHtml(mapped.first_name || 'Missing name (Skipped)')}</span></td>
+                            <td><span class="text-muted">${escapeHtml(mapped.last_name || '')}</span></td>
+                            <td><span class="${mapped.email ? 'text-dark' : 'text-danger small'}">${escapeHtml(mapped.email || 'Missing email (Skipped)')}</span></td>
+                            <td><span class="text-muted">${escapeHtml(mapped.phone || '-')}</span></td>
+                        `;
+                        importPreviewTbody.appendChild(tr);
+                    });
+
+                    importTotalBadge.textContent = `${parsedRecords.length} records parsed`;
+                    importPreviewPanel.classList.remove("d-none");
+                    importSubmitBtn.disabled = false;
+
+                } catch (err) {
+                    console.error("Parse error:", err);
+                    showAlert("danger", `File Reading Error: ${err.message}`);
+                    resetImportModal();
+                }
+            };
+            reader.readAsText(file);
+        });
+    }
+
+    if (importForm) {
+        importForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            if (parsedRecords.length === 0) return;
+
+            const originalText = importSubmitBtn.innerHTML;
+            importSubmitBtn.disabled = true;
+            importSubmitBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Uploading...`;
+
+            try {
+                const response = await fetch(BULK_API_URL, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(parsedRecords)
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json().catch(() => ({}));
+                    throw new Error(errData.detail || "Bulk upload failed.");
+                }
+
+                const result = await response.json();
+                
+                showAlert("success", `Import Complete! Created: ${result.imported} client(s). Skipped: ${result.skipped_duplicates} duplicate(s), ${result.skipped_invalid} invalid rows.`);
+                
+                // Hide modal
+                const modalElement = document.getElementById("importCustomersModal");
+                const modalInstance = bootstrap.Modal.getInstance(modalElement);
+                if (modalInstance) {
+                    modalInstance.hide();
+                }
+                
+                resetImportModal();
+                importForm.reset();
+                fetchCustomersList();
+
+            } catch (error) {
+                console.error("Error bulk uploading:", error);
+                showAlert("danger", `Upload Failed: ${error.message}`);
+                importSubmitBtn.disabled = false;
+                importSubmitBtn.innerHTML = originalText;
+            }
+        });
+    }
+
+    function resetImportModal() {
+        parsedRecords = [];
+        importSubmitBtn.disabled = true;
+        importSubmitBtn.innerHTML = "Upload & Import";
+        importPreviewPanel.classList.add("d-none");
+        importPreviewTbody.innerHTML = "";
+        if (importFileInput) importFileInput.value = "";
+    }
+
+    // RFC 4180 compliant CSV parser
+    function parseCSV(text) {
+        const lines = [];
+        let row = [""];
+        let inQuotes = false;
+
+        for (let i = 0; i < text.length; i++) {
+            const c = text[i];
+            const next = text[i + 1];
+
+            if (c === '"') {
+                if (inQuotes && next === '"') {
+                    row[row.length - 1] += '"';
+                    i++;
+                } else {
+                    inQuotes = !inQuotes;
+                }
+            } else if (c === ',' && !inQuotes) {
+                row.push('');
+            } else if ((c === '\r' || c === '\n') && !inQuotes) {
+                if (c === '\r' && next === '\n') {
+                    i++;
+                }
+                lines.push(row);
+                row = [''];
+            } else {
+                row[row.length - 1] += c;
+            }
+        }
+        if (row.length > 1 || row[0] !== '') {
+            lines.push(row);
+        }
+
+        if (lines.length === 0) return [];
+
+        const headers = lines[0].map(h => h.trim());
+        const records = [];
+
+        for (let i = 1; i < lines.length; i++) {
+            const values = lines[i];
+            // Skip empty rows
+            if (values.length === 1 && values[0] === "") continue;
+            
+            const record = {};
+            for (let j = 0; j < headers.length; j++) {
+                record[headers[j]] = values[j] ? values[j].trim() : '';
+            }
+            records.push(record);
+        }
+
+        return records;
+    }
+
+    // Fuzzy matching preview mapper
+    function mapRecordFuzzy(record) {
+        let first_name = "";
+        let last_name = "";
+        let email = "";
+        let phone = "";
+
+        for (const [k, v] of Object.entries(record)) {
+            if (!v) continue;
+            const v_str = String(v).trim();
+            if (!v_str) continue;
+
+            const k_lower = k.toLowerCase();
+
+            if (k_lower.includes("email") || k_lower.includes("mail") || k_lower.includes("addr")) {
+                if (!email) email = v_str;
+            } else if (k_lower.includes("phone") || k_lower.includes("tel") || k_lower.includes("cell") || k_lower.includes("mob") || k_lower.includes("contact")) {
+                if (!phone) phone = v_str;
+            } else if (k_lower.includes("first") || k_lower.includes("fname") || k_lower.includes("given")) {
+                if (!first_name) first_name = v_str;
+            } else if (k_lower.includes("last") || k_lower.includes("lname") || k_lower.includes("sur") || k_lower.includes("family")) {
+                if (!last_name) last_name = v_str;
+            }
+        }
+
+        // Fallback name splitting
+        if (!first_name) {
+            for (const [k, v] of Object.entries(record)) {
+                if (!v) continue;
+                const v_str = String(v).trim();
+                if (!v_str) continue;
+
+                const k_lower = k.toLowerCase();
+                if (k_lower === "name" || k_lower.includes("fullname") || k_lower.includes("full name")) {
+                    const parts = v_str.split(/\s+/);
+                    first_name = parts[0];
+                    if (parts.length > 1) {
+                        last_name = parts.slice(1).join(" ");
+                    }
+                    break;
+                }
+            }
+        }
+
+        if (!last_name && first_name) {
+            last_name = "Customer";
+        }
+
+        return { first_name, last_name, email, phone };
+    }
 });
