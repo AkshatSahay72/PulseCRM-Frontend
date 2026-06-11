@@ -200,10 +200,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 <td><span class="text-muted small text-truncate d-inline-block" style="max-width: 250px;">${escapeHtml(campaign.subject)}</span></td>
                 <td><span class="badge bg-light text-dark border">Segment ID: ${campaign.segment_id ? campaign.segment_id : "None"}</span></td>
                 <td>${statusBadge}</td>
-                <td class="text-end">
+                <td class="text-end text-nowrap">
                     ${launchBtn}
                     <button class="btn btn-sm btn-light border text-primary font-weight-semibold btn-analytics-campaign ms-1" data-id="${campaign.id}" data-name="${escapeHtml(campaign.name)}">
                         <i class="bi bi-graph-up me-1"></i>Analytics
+                    </button>
+                    <button class="btn btn-sm btn-light border text-danger btn-delete-campaign ms-1" data-id="${campaign.id}" data-name="${escapeHtml(campaign.name)}">
+                        <i class="bi bi-trash"></i>
                     </button>
                 </td>
             `;
@@ -215,6 +218,31 @@ document.addEventListener("DOMContentLoaded", () => {
             btn.addEventListener("click", (e) => {
                 const id = e.currentTarget.getAttribute("data-id");
                 launchCampaign(id);
+            });
+        });
+
+        // Delete Campaign Event handler
+        document.querySelectorAll(".btn-delete-campaign").forEach(btn => {
+            btn.addEventListener("click", async (e) => {
+                const id = e.currentTarget.getAttribute("data-id");
+                const name = e.currentTarget.getAttribute("data-name");
+
+                if (confirm(`Are you sure you want to delete the campaign "${name}"? This will permanently delete the campaign draft and all associated outbox log timelines.`)) {
+                    try {
+                        const response = await fetch(`${CAMPAIGNS_API_URL}${id}`, {
+                            method: "DELETE"
+                        });
+                        if (!response.ok) {
+                            const errData = await response.json().catch(() => ({}));
+                            throw new Error(errData.detail || "Failed to delete campaign.");
+                        }
+                        showAlert("success", `Campaign "${name}" deleted successfully.`);
+                        fetchCampaignsList();
+                    } catch (error) {
+                        console.error("Error deleting campaign:", error);
+                        showAlert("danger", `Delete Failed: ${error.message}`);
+                    }
+                }
             });
         });
 
@@ -518,6 +546,206 @@ document.addEventListener("DOMContentLoaded", () => {
             
             closeBtn.classList.remove("d-none");
         }
+    }
+
+    // --- AI Campaign Copilot Logic ---
+    const COPILOT_API_URL = `${API_BASE_URL}/campaigns/ai-copilot`;
+    const copilotForm = document.getElementById("ai-copilot-form");
+    const copilotGoalInput = document.getElementById("copilot-goal-input");
+    const copilotBrainstormBtn = document.getElementById("copilot-brainstorm-btn");
+    const copilotPreviewCard = document.getElementById("copilot-preview-card");
+    const copilotRecName = document.getElementById("copilot-rec-name");
+    const copilotRecChannel = document.getElementById("copilot-rec-channel");
+    const copilotRecSegment = document.getElementById("copilot-rec-segment");
+    const copilotRecRules = document.getElementById("copilot-rec-rules");
+    const copilotRecSubject = document.getElementById("copilot-rec-subject");
+    const copilotRecTemplate = document.getElementById("copilot-rec-template");
+    const copilotRecReasoning = document.getElementById("copilot-rec-reasoning");
+    const copilotDiscardBtn = document.getElementById("copilot-discard-btn");
+    const copilotApproveBtn = document.getElementById("copilot-approve-btn");
+    const copilotSubjectGroup = document.getElementById("copilot-subject-group");
+
+    let currentRecommendation = null;
+
+    // Suggestion chips handler
+    document.querySelectorAll(".copilot-suggestion-chip").forEach(chip => {
+        chip.addEventListener("click", () => {
+            if (copilotGoalInput) {
+                copilotGoalInput.value = chip.textContent;
+                copilotGoalInput.focus();
+            }
+        });
+    });
+
+    // Form submit: Brainstorm AI Strategy
+    if (copilotForm) {
+        copilotForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const goalValue = copilotGoalInput.value.trim();
+            if (!goalValue) return;
+
+            const originalHtml = copilotBrainstormBtn.innerHTML;
+            copilotBrainstormBtn.disabled = true;
+            copilotBrainstormBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Analyzing...`;
+            copilotPreviewCard.classList.add("d-none");
+
+            try {
+                const response = await fetch(`${COPILOT_API_URL}?goal=${encodeURIComponent(goalValue)}`, {
+                    method: "POST"
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json().catch(() => ({}));
+                    throw new Error(errData.detail || "Failed to generate copilot strategy.");
+                }
+
+                currentRecommendation = await response.json();
+
+                // Populate Previews
+                copilotRecName.textContent = currentRecommendation.campaign_name;
+                copilotRecChannel.textContent = `${currentRecommendation.channel} Channel`;
+                copilotRecSegment.textContent = `Target Segment: ${currentRecommendation.segment_name}`;
+                copilotRecTemplate.textContent = currentRecommendation.message_template;
+                copilotRecReasoning.textContent = currentRecommendation.reasoning;
+
+                // Handle subject line visibility
+                if (currentRecommendation.channel === "email") {
+                    copilotRecSubject.textContent = currentRecommendation.subject || "Exclusive Offer";
+                    if (copilotSubjectGroup) copilotSubjectGroup.classList.remove("d-none");
+                } else {
+                    if (copilotSubjectGroup) copilotSubjectGroup.classList.add("d-none");
+                }
+
+                // Render segment rules preview badges
+                copilotRecRules.innerHTML = "";
+                const rules = currentRecommendation.segment_rules || {};
+                const badges = [];
+
+                if (rules.min_spending !== undefined && rules.min_spending !== null) {
+                    badges.push(`<span class="badge bg-primary-subtle text-primary border border-primary-subtle me-1">Spending &ge; $${rules.min_spending}</span>`);
+                }
+                if (rules.max_spending !== undefined && rules.max_spending !== null) {
+                    badges.push(`<span class="badge bg-warning-subtle text-warning border border-warning-subtle me-1">Spending &le; $${rules.max_spending}</span>`);
+                }
+                if (rules.min_orders !== undefined && rules.min_orders !== null) {
+                    badges.push(`<span class="badge bg-info-subtle text-info border border-info-subtle me-1">Orders &ge; ${rules.min_orders}</span>`);
+                }
+
+                if (badges.length === 0) {
+                    copilotRecRules.innerHTML = `<span class="text-muted small">No specific criteria (Targets All)</span>`;
+                } else {
+                    copilotRecRules.innerHTML = badges.join(" ");
+                }
+
+                // Display preview
+                copilotPreviewCard.classList.remove("d-none");
+                showAlert("success", "AI Agent successfully generated a custom campaign strategy!");
+
+            } catch (err) {
+                console.error("Copilot brainstorm error:", err);
+                showAlert("danger", `Strategy Brainstorming Failed: ${err.message}`);
+            } finally {
+                copilotBrainstormBtn.disabled = false;
+                copilotBrainstormBtn.innerHTML = originalHtml;
+            }
+        });
+    }
+
+    // Discard Button handler
+    if (copilotDiscardBtn) {
+        copilotDiscardBtn.addEventListener("click", () => {
+            currentRecommendation = null;
+            copilotPreviewCard.classList.add("d-none");
+            if (copilotGoalInput) copilotGoalInput.value = "";
+        });
+    }
+
+    // Approve & Save Draft Button handler
+    if (copilotApproveBtn) {
+        copilotApproveBtn.addEventListener("click", async () => {
+            if (!currentRecommendation) return;
+
+            const originalText = copilotApproveBtn.innerHTML;
+            copilotApproveBtn.disabled = true;
+            copilotApproveBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Creating...`;
+
+            try {
+                // 1. Create the segment
+                const segmentPayload = {
+                    name: currentRecommendation.segment_name,
+                    description: currentRecommendation.reasoning || "Generated by AI Copilot",
+                    rules: currentRecommendation.segment_rules || {}
+                };
+
+                const segmentResponse = await fetch(SEGMENTS_API_URL, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(segmentPayload)
+                });
+
+                if (!segmentResponse.ok) {
+                    throw new Error("Failed to register the recommended target segment.");
+                }
+
+                const segmentData = await segmentResponse.json();
+                const newSegmentId = segmentData.id;
+
+                // 2. Create the campaign draft
+                const campaignPayload = {
+                    name: currentRecommendation.campaign_name,
+                    subject: currentRecommendation.subject || "Offer Details",
+                    message_template: currentRecommendation.message_template,
+                    segment_id: newSegmentId
+                };
+
+                const campaignResponse = await fetch(CAMPAIGNS_API_URL, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(campaignPayload)
+                });
+
+                if (!campaignResponse.ok) {
+                    throw new Error("Failed to register the recommended campaign draft.");
+                }
+
+                const campaignData = await campaignResponse.json();
+
+                showAlert("success", `Strategy Saved! Segment "#${newSegmentId}" and Campaign "#${campaignData.id}" created successfully.`);
+
+                // Reset preview card & form
+                currentRecommendation = null;
+                copilotPreviewCard.classList.add("d-none");
+                if (copilotGoalInput) copilotGoalInput.value = "";
+
+                // Refresh segments & campaign directory lists
+                await fetchSegmentsDropdown();
+                await fetchCampaignsList();
+
+                // Switch view to manual composer & prepopulate fields
+                const manualTabEl = document.getElementById("manual-tab");
+                if (manualTabEl) {
+                    const manualTab = new bootstrap.Tab(manualTabEl);
+                    manualTab.show();
+
+                    // Prepopulate fields
+                    document.getElementById("campaign-name").value = campaignData.name;
+                    document.getElementById("campaign-subject").value = campaignData.subject || "";
+                    document.getElementById("campaign-template").value = campaignData.message_template;
+                    document.getElementById("campaign-segment").value = newSegmentId;
+                }
+
+            } catch (err) {
+                console.error("Approve copilot strategy error:", err);
+                showAlert("danger", `Deployment Failed: ${err.message}`);
+            } finally {
+                copilotApproveBtn.disabled = false;
+                copilotApproveBtn.innerHTML = originalText;
+            }
+        });
     }
 
     // Utility function to escape HTML to prevent XSS

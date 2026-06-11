@@ -16,82 +16,164 @@
 <!-- Campaign Builder Card -->
 <div class="mx-auto mb-5" style="max-width: 800px;">
     <div class="card border-0 shadow-sm p-4">
-        <form id="create-campaign-form">
-            
-            <!-- Section: Campaign Details -->
-            <div class="mb-4">
-                <div class="d-flex align-items-center mb-3">
-                    <span class="btn btn-sm btn-primary-subtle text-primary rounded-circle me-2 p-0 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; pointer-events: none;">
-                        <i class="bi bi-info-circle small"></i>
-                    </span>
-                    <h6 class="m-0 font-weight-bold text-main">Campaign Details</h6>
-                </div>
-                <div class="row g-3">
-                    <div class="col-12 col-md-6">
-                        <label for="campaign-name" class="form-label font-weight-semibold small text-muted">Campaign Name</label>
-                        <input type="text" class="form-control" id="campaign-name" required placeholder="e.g. Summer Shoe Sale">
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <label for="campaign-subject" class="form-label font-weight-semibold small text-muted">Email Subject Line</label>
-                        <input type="text" class="form-control" id="campaign-subject" required placeholder="e.g. Get 20% off all shoes!">
-                    </div>
-                </div>
-            </div>
-
-            <hr class="my-4 text-muted opacity-25">
-
-            <!-- Section: Audience -->
-            <div class="mb-4">
-                <div class="d-flex align-items-center mb-3">
-                    <span class="btn btn-sm btn-success-subtle text-success rounded-circle me-2 p-0 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; pointer-events: none;">
-                        <i class="bi bi-people small"></i>
-                    </span>
-                    <h6 class="m-0 font-weight-bold text-main">Audience</h6>
-                </div>
-                <div class="row">
-                    <div class="col-12 col-md-6">
-                        <label for="campaign-segment" class="form-label font-weight-semibold small text-muted">Target Segment</label>
-                        <select class="form-select" id="campaign-segment" required>
-                            <option value="" disabled selected>Loading segments...</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <hr class="my-4 text-muted opacity-25">
-
-            <!-- Section: Content -->
-            <div class="mb-4">
-                <div class="d-flex align-items-center mb-3">
-                    <span class="btn btn-sm btn-info-subtle text-info rounded-circle me-2 p-0 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; pointer-events: none;">
-                        <i class="bi bi-file-earmark-text small"></i>
-                    </span>
-                    <h6 class="m-0 font-weight-bold text-main">Content</h6>
-                </div>
-                <div class="mb-3">
-                    <label for="campaign-template" class="form-label font-weight-semibold small text-muted">Message Template</label>
-                    <textarea class="form-control" id="campaign-template" rows="5" required placeholder="e.g. Hi {first_name}, check out our premium shoes!"></textarea>
-                    <div class="form-text small text-muted mt-2">
-                        <i class="bi bi-info-circle me-1"></i>Use <code>{first_name}</code> to inject client's first name dynamically.
-                    </div>
-                </div>
-            </div>
-
-            <!-- Actions -->
-            <div class="d-flex justify-content-between align-items-center pt-2 flex-wrap gap-2">
-                <button type="button" class="btn btn-outline-primary" id="generate-template-ai-btn">
-                    <i class="bi bi-stars me-1"></i>Generate with AI
+        <!-- Tabs Header -->
+        <ul class="nav nav-pills nav-fill border-bottom pb-3 mb-4" id="composerTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active font-weight-bold" id="copilot-tab" data-bs-toggle="pill" data-bs-target="#copilot-pane" type="button" role="tab" aria-controls="copilot-pane" aria-selected="true">
+                    <i class="bi bi-stars me-2"></i>AI Campaign Copilot
                 </button>
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-outline-secondary" id="save-campaign-btn">
-                        <i class="bi bi-save me-1"></i>Save Draft
-                    </button>
-                    <button type="button" class="btn btn-primary" id="save-and-send-campaign-btn">
-                        <i class="bi bi-send me-1"></i>Create & Send Now
-                    </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link font-weight-bold" id="manual-tab" data-bs-toggle="pill" data-bs-target="#manual-pane" type="button" role="tab" aria-controls="manual-pane" aria-selected="false">
+                    <i class="bi bi-pencil-square me-2"></i>Manual Composer
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="composerTabsContent">
+            <!-- Pane 1: AI Copilot -->
+            <div class="tab-pane fade show active" id="copilot-pane" role="tabpanel" aria-labelledby="copilot-tab">
+                <form id="ai-copilot-form" class="py-2">
+                    <div class="mb-3">
+                        <label for="copilot-goal-input" class="form-label font-weight-semibold small text-muted">What is your business campaign goal?</label>
+                        <div class="input-group">
+                            <input type="text" id="copilot-goal-input" class="form-control" required placeholder="describe goal, e.g. Clear winter coats by messaging shoppers with 0 orders">
+                            <button type="submit" class="btn btn-primary" id="copilot-brainstorm-btn">
+                                <i class="bi bi-cpu-fill me-1"></i>Brainstorm Strategy
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Suggestions -->
+                    <div class="d-flex align-items-center flex-wrap gap-2 mb-4">
+                        <span class="small text-muted me-2">Suggestions:</span>
+                        <button type="button" class="btn btn-sm btn-light border copilot-suggestion-chip">Clear footwear stock by targeting customers who spent under 100</button>
+                        <button type="button" class="btn btn-sm btn-light border copilot-suggestion-chip">Target loyal customers with 3+ orders with a VIP handbag discount</button>
+                        <button type="button" class="btn btn-sm btn-light border copilot-suggestion-chip">Re-engage new leads with 0 orders with a warm welcome offer</button>
+                    </div>
+                </form>
+
+                <!-- Copilot Strategy Preview -->
+                <div id="copilot-preview-card" class="d-none border rounded p-4 bg-light-subtle shadow-xs mb-3">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <h6 class="font-weight-bold text-main m-0" id="copilot-rec-name">Suggested Campaign</h6>
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle mt-1 text-capitalize" id="copilot-rec-channel">Email Channel</span>
+                        </div>
+                        <span class="badge bg-secondary border" id="copilot-rec-segment">Audience: Winter Coat Target Leads</span>
+                    </div>
+                    
+                    <div class="mb-3 border-top pt-3">
+                        <div class="small text-muted font-weight-semibold uppercase mb-1">Target Segment Rules</div>
+                        <div id="copilot-rec-rules" class="d-flex flex-wrap gap-1">
+                            <!-- Rule Badges -->
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3 border-top pt-3">
+                        <div id="copilot-subject-group">
+                            <div class="small text-muted font-weight-semibold uppercase mb-1">Email Subject Line</div>
+                            <div class="font-weight-bold text-main mb-2" id="copilot-rec-subject">-</div>
+                        </div>
+                        
+                        <div class="small text-muted font-weight-semibold uppercase mb-1">Message Template Body</div>
+                        <div class="p-3 bg-white border rounded text-muted" id="copilot-rec-template" style="font-size: 0.875rem; white-space: pre-wrap;">-</div>
+                    </div>
+
+                    <div class="mb-4 border-top pt-3">
+                        <div class="small text-muted font-weight-semibold uppercase mb-1"><i class="bi bi-stars text-primary me-1"></i>AI Strategy & Reasoning</div>
+                        <p class="text-muted small m-0" id="copilot-rec-reasoning">-</p>
+                    </div>
+                    
+                    <div class="d-flex gap-2 justify-content-end">
+                        <button type="button" class="btn btn-light border" id="copilot-discard-btn">Discard</button>
+                        <button type="button" class="btn btn-primary" id="copilot-approve-btn">
+                            <i class="bi bi-check-circle me-1"></i>Approve & Create Draft
+                        </button>
+                    </div>
                 </div>
             </div>
-        </form>
+
+            <!-- Pane 2: Manual Composer -->
+            <div class="tab-pane fade" id="manual-pane" role="tabpanel" aria-labelledby="manual-tab">
+                <form id="create-campaign-form">
+                    
+                    <!-- Section: Campaign Details -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <span class="btn btn-sm btn-primary-subtle text-primary rounded-circle me-2 p-0 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; pointer-events: none;">
+                                <i class="bi bi-info-circle small"></i>
+                            </span>
+                            <h6 class="m-0 font-weight-bold text-main">Campaign Details</h6>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label for="campaign-name" class="form-label font-weight-semibold small text-muted">Campaign Name</label>
+                                <input type="text" class="form-control" id="campaign-name" required placeholder="e.g. Summer Shoe Sale">
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label for="campaign-subject" class="form-label font-weight-semibold small text-muted">Email Subject Line</label>
+                                <input type="text" class="form-control" id="campaign-subject" required placeholder="e.g. Get 20% off all shoes!">
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="my-4 text-muted opacity-25">
+
+                    <!-- Section: Audience -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <span class="btn btn-sm btn-success-subtle text-success rounded-circle me-2 p-0 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; pointer-events: none;">
+                                <i class="bi bi-people small"></i>
+                            </span>
+                            <h6 class="m-0 font-weight-bold text-main">Audience</h6>
+                        </div>
+                        <div class="row">
+                            <div class="col-12 col-md-6">
+                                <label for="campaign-segment" class="form-label font-weight-semibold small text-muted">Target Segment</label>
+                                <select class="form-select" id="campaign-segment" required>
+                                    <option value="" disabled selected>Loading segments...</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="my-4 text-muted opacity-25">
+
+                    <!-- Section: Content -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <span class="btn btn-sm btn-info-subtle text-info rounded-circle me-2 p-0 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; pointer-events: none;">
+                                <i class="bi bi-file-earmark-text small"></i>
+                            </span>
+                            <h6 class="m-0 font-weight-bold text-main">Content</h6>
+                        </div>
+                        <div class="mb-3">
+                            <label for="campaign-template" class="form-label font-weight-semibold small text-muted">Message Template</label>
+                            <textarea class="form-control" id="campaign-template" rows="5" required placeholder="e.g. Hi {first_name}, check out our premium shoes!"></textarea>
+                            <div class="form-text small text-muted mt-2">
+                                <i class="bi bi-info-circle me-1"></i>Use <code>{first_name}</code> to inject client's first name dynamically.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="d-flex justify-content-between align-items-center pt-2 flex-wrap gap-2">
+                        <button type="button" class="btn btn-outline-primary" id="generate-template-ai-btn">
+                            <i class="bi bi-stars me-1"></i>Generate with AI
+                        </button>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-outline-secondary" id="save-campaign-btn">
+                                <i class="bi bi-save me-1"></i>Save Draft
+                            </button>
+                            <button type="button" class="btn btn-primary" id="save-and-send-campaign-btn">
+                                <i class="bi bi-send me-1"></i>Create & Send Now
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 </div>
 
