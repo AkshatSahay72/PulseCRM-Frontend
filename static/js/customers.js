@@ -7,6 +7,14 @@ document.addEventListener("DOMContentLoaded", () => {
     // Fetch customers list on page load
     fetchCustomersList();
 
+    // Check for sessionStorage alert from customer profile page deletion
+    const deleteAlert = sessionStorage.getItem("customer_deleted_alert");
+    if (deleteAlert) {
+        // Wait briefly for UI list loading before alert rendering
+        setTimeout(() => showAlert("success", deleteAlert), 100);
+        sessionStorage.removeItem("customer_deleted_alert");
+    }
+
     // Event listener for search input
     const searchInput = document.getElementById("customer-search");
     searchInput.addEventListener("input", (e) => {
@@ -189,11 +197,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 <td><a href="mailto:${escapeHtml(customer.email)}" class="text-decoration-none">${escapeHtml(customer.email)}</a></td>
                 <td><span class="text-muted">${escapeHtml(customer.phone)}</span></td>
                 <td>${formattedDate}</td>
-                <td class="text-end">
+                <td class="text-end text-nowrap">
                     <button class="btn btn-sm btn-light border text-primary font-weight-semibold btn-add-order" 
                             data-id="${customer.id}" 
                             data-name="${escapeHtml(customer.first_name)} ${escapeHtml(customer.last_name)}">
                         <i class="bi bi-plus-circle me-1"></i>Add Order
+                    </button>
+                    <button class="btn btn-sm btn-light border text-danger btn-delete-customer ms-1" 
+                            data-id="${customer.id}" 
+                            data-name="${escapeHtml(customer.first_name)} ${escapeHtml(customer.last_name)}">
+                        <i class="bi bi-trash"></i>
                     </button>
                 </td>
             `;
@@ -214,6 +227,32 @@ document.addEventListener("DOMContentLoaded", () => {
                 // Show modal
                 const orderModal = new bootstrap.Modal(document.getElementById("addOrderModal"));
                 orderModal.show();
+            });
+        });
+
+        // Attach event listeners to all dynamically created "Delete Customer" buttons
+        document.querySelectorAll(".btn-delete-customer").forEach(button => {
+            button.addEventListener("click", async (e) => {
+                const btn = e.currentTarget;
+                const customerId = btn.getAttribute("data-id");
+                const customerName = btn.getAttribute("data-name");
+
+                if (confirm(`Are you sure you want to delete the customer "${customerName}"? This will delete all their purchase records and campaign timeline logs.`)) {
+                    try {
+                        const response = await fetch(`${CUSTOMERS_API_URL}${customerId}`, {
+                            method: "DELETE"
+                        });
+                        if (!response.ok) {
+                            const errData = await response.json().catch(() => ({}));
+                            throw new Error(errData.detail || "Failed to delete customer.");
+                        }
+                        showAlert("success", `Customer "${customerName}" deleted successfully.`);
+                        fetchCustomersList();
+                    } catch (error) {
+                        console.error("Error deleting customer:", error);
+                        showAlert("danger", `Delete Failed: ${error.message}`);
+                    }
+                }
             });
         });
     }
