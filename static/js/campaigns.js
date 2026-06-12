@@ -223,26 +223,33 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Delete Campaign Event handler
         document.querySelectorAll(".btn-delete-campaign").forEach(btn => {
-            btn.addEventListener("click", async (e) => {
-                const id = e.currentTarget.getAttribute("data-id");
-                const name = e.currentTarget.getAttribute("data-name");
+            btn.addEventListener("click", (e) => {
+                const targetBtn = e.target.closest(".btn-delete-campaign") || e.currentTarget;
+                const id = targetBtn.getAttribute("data-id");
+                const name = targetBtn.getAttribute("data-name");
 
-                if (confirm(`Are you sure you want to delete the campaign "${name}"? This will permanently delete the campaign draft and all associated outbox log timelines.`)) {
-                    try {
-                        const response = await fetch(`${CAMPAIGNS_API_URL}${id}`, {
-                            method: "DELETE"
-                        });
-                        if (!response.ok) {
-                            const errData = await response.json().catch(() => ({}));
-                            throw new Error(errData.detail || "Failed to delete campaign.");
+                window.confirmAction({
+                    title: "Delete Campaign",
+                    heading: "Delete Campaign?",
+                    message: `Are you sure you want to delete the campaign "${name}"? This will permanently delete the campaign draft and all associated outbox log timelines.`,
+                    btnText: "Delete",
+                    onConfirm: async () => {
+                        try {
+                            const response = await fetch(`${CAMPAIGNS_API_URL}${id}`, {
+                                method: "DELETE"
+                            });
+                            if (!response.ok) {
+                                const errData = await response.json().catch(() => ({}));
+                                throw new Error(errData.detail || "Failed to delete campaign.");
+                            }
+                            showAlert("success", `Campaign "${name}" deleted successfully.`);
+                            fetchCampaignsList();
+                        } catch (error) {
+                            console.error("Error deleting campaign:", error);
+                            showAlert("danger", `Delete Failed: ${error.message}`);
                         }
-                        showAlert("success", `Campaign "${name}" deleted successfully.`);
-                        fetchCampaignsList();
-                    } catch (error) {
-                        console.error("Error deleting campaign:", error);
-                        showAlert("danger", `Delete Failed: ${error.message}`);
                     }
-                }
+                });
             });
         });
 

@@ -319,27 +319,33 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Event listener: Delete Segment
         document.querySelectorAll(".btn-delete").forEach(button => {
-            button.addEventListener("click", async (e) => {
-                const btn = e.currentTarget;
-                const segmentId = btn.getAttribute("data-id");
-                const segmentName = btn.getAttribute("data-name");
+            button.addEventListener("click", (e) => {
+                const targetBtn = e.target.closest(".btn-delete") || e.currentTarget;
+                const segmentId = targetBtn.getAttribute("data-id");
+                const segmentName = targetBtn.getAttribute("data-name");
 
-                if (confirm(`Are you sure you want to delete the segment "${segmentName}"?`)) {
-                    try {
-                        const response = await fetch(`${SEGMENTS_API_URL}${segmentId}`, {
-                            method: "DELETE"
-                        });
-                        if (!response.ok) {
-                            const errData = await response.json().catch(() => ({}));
-                            throw new Error(errData.detail || "Failed to delete segment.");
+                window.confirmAction({
+                    title: "Delete Segment",
+                    heading: "Delete Segment?",
+                    message: `Are you sure you want to delete the segment "${segmentName}"?`,
+                    btnText: "Delete",
+                    onConfirm: async () => {
+                        try {
+                            const response = await fetch(`${SEGMENTS_API_URL}${segmentId}`, {
+                                method: "DELETE"
+                            });
+                            if (!response.ok) {
+                                const errData = await response.json().catch(() => ({}));
+                                throw new Error(errData.detail || "Failed to delete segment.");
+                            }
+                            showAlert("success", `Segment "${segmentName}" deleted successfully.`);
+                            fetchSegmentsList();
+                        } catch (error) {
+                            console.error("Error deleting segment:", error);
+                            showAlert("danger", `Delete Failed: ${error.message}`);
                         }
-                        showAlert("success", `Segment "${segmentName}" deleted successfully.`);
-                        fetchSegmentsList();
-                    } catch (error) {
-                        console.error("Error deleting segment:", error);
-                        showAlert("danger", `Delete Failed: ${error.message}`);
                     }
-                }
+                });
             });
         });
     }

@@ -8,27 +8,33 @@ document.addEventListener("DOMContentLoaded", () => {
     // Event listener: Delete Customer from profile page
     const deleteProfileBtn = document.getElementById("btn-profile-delete-customer");
     if (deleteProfileBtn) {
-        deleteProfileBtn.addEventListener("click", async () => {
+        deleteProfileBtn.addEventListener("click", () => {
             const customerName = document.getElementById("profile-name").textContent || "this customer";
-            if (confirm(`Are you sure you want to delete the customer "${customerName}"? This will delete all their purchase records and campaign timeline logs, and redirect you back to the directory.`)) {
-                try {
-                    const deleteUrl = `${API_BASE_URL}/customers/${CUSTOMER_ID}`;
-                    const response = await fetch(deleteUrl, {
-                        method: "DELETE"
-                    });
-                    if (!response.ok) {
-                        const errData = await response.json().catch(() => ({}));
-                        throw new Error(errData.detail || "Failed to delete customer profile.");
+            window.confirmAction({
+                title: "Delete Customer Profile",
+                heading: "Delete Customer?",
+                message: `Are you sure you want to delete the customer "${customerName}"? This will delete all their purchase records and campaign timeline logs, and redirect you back to the directory.`,
+                btnText: "Delete",
+                onConfirm: async () => {
+                    try {
+                        const deleteUrl = `${API_BASE_URL}/customers/${CUSTOMER_ID}`;
+                        const response = await fetch(deleteUrl, {
+                            method: "DELETE"
+                        });
+                        if (!response.ok) {
+                            const errData = await response.json().catch(() => ({}));
+                            throw new Error(errData.detail || "Failed to delete customer profile.");
+                        }
+                        
+                        // Save deletion message to session storage for cross-page toast alert
+                        sessionStorage.setItem("customer_deleted_alert", `Customer "${customerName}" was deleted successfully.`);
+                        window.location.href = "/customers";
+                    } catch (error) {
+                        console.error("Error deleting customer profile:", error);
+                        showAlert("danger", `Delete Failed: ${error.message}`);
                     }
-                    
-                    // Save deletion message to session storage for cross-page toast alert
-                    sessionStorage.setItem("customer_deleted_alert", `Customer "${customerName}" was deleted successfully.`);
-                    window.location.href = "/customers";
-                } catch (error) {
-                    console.error("Error deleting customer profile:", error);
-                    showAlert("danger", `Delete Failed: ${error.message}`);
                 }
-            }
+            });
         });
     }
 

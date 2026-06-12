@@ -166,7 +166,69 @@
 
             checkConnection();
         });
+
+        // Global Helper: Custom premium confirmation modal
+        window.confirmAction = function(options) {
+            const title = options.title || "Confirm Action";
+            const heading = options.heading || "Are you sure?";
+            const message = options.message || "This action cannot be undone.";
+            const onConfirm = options.onConfirm;
+            const btnText = options.btnText || "Yes, Delete";
+            const btnClass = options.btnClass || "btn-danger";
+
+            document.getElementById("confirm-modal-title").textContent = title;
+            document.getElementById("confirm-modal-heading").textContent = heading;
+            document.getElementById("confirm-modal-message").textContent = message;
+            
+            const confirmBtn = document.getElementById("confirm-modal-btn");
+            confirmBtn.textContent = btnText;
+            confirmBtn.className = `btn btn-sm px-4 ${btnClass}`;
+
+            // Replace element to purge existing event listeners safely
+            const newConfirmBtn = confirmBtn.cloneNode(true);
+            confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+
+            const modalEl = document.getElementById("confirmActionModal");
+            let modal = bootstrap.Modal.getInstance(modalEl);
+            if (!modal) {
+                modal = new bootstrap.Modal(modalEl);
+            }
+            
+            newConfirmBtn.addEventListener("click", () => {
+                modal.hide();
+                if (typeof onConfirm === "function") {
+                    onConfirm();
+                }
+            });
+
+            modal.show();
+        };
     </script>
+
+    <!-- Global Confirmation Modal Markup -->
+    <div class="modal fade" id="confirmActionModal" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
+        <div class="modal-dialog modal-dialog-centered modal-sm" style="max-width: 380px;">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header border-bottom bg-light py-2">
+                    <h6 class="modal-title font-weight-bold text-main" id="confirm-modal-title">Confirm Action</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4 text-center">
+                    <div class="text-danger mb-3" style="font-size: 2.25rem; line-height: 1;">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                    </div>
+                    <h6 class="font-weight-bold mb-2 text-main" id="confirm-modal-heading">Are you sure?</h6>
+                    <p class="text-muted small m-0" id="confirm-modal-message">This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer bg-light border-top d-flex justify-content-between p-2">
+                    <button type="button" class="btn btn-sm btn-light border px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-sm btn-danger px-4" id="confirm-modal-btn">Yes, Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {% block scripts %}{% endblock %}
 </body>
 </html>
+

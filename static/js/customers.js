@@ -232,27 +232,33 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Attach event listeners to all dynamically created "Delete Customer" buttons
         document.querySelectorAll(".btn-delete-customer").forEach(button => {
-            button.addEventListener("click", async (e) => {
-                const btn = e.currentTarget;
-                const customerId = btn.getAttribute("data-id");
-                const customerName = btn.getAttribute("data-name");
+            button.addEventListener("click", (e) => {
+                const targetBtn = e.target.closest(".btn-delete-customer") || e.currentTarget;
+                const customerId = targetBtn.getAttribute("data-id");
+                const customerName = targetBtn.getAttribute("data-name");
 
-                if (confirm(`Are you sure you want to delete the customer "${customerName}"? This will delete all their purchase records and campaign timeline logs.`)) {
-                    try {
-                        const response = await fetch(`${CUSTOMERS_API_URL}${customerId}`, {
-                            method: "DELETE"
-                        });
-                        if (!response.ok) {
-                            const errData = await response.json().catch(() => ({}));
-                            throw new Error(errData.detail || "Failed to delete customer.");
+                window.confirmAction({
+                    title: "Delete Customer",
+                    heading: "Delete Customer?",
+                    message: `Are you sure you want to delete the customer "${customerName}"? This will delete all their purchase records and campaign timeline logs.`,
+                    btnText: "Delete",
+                    onConfirm: async () => {
+                        try {
+                            const response = await fetch(`${CUSTOMERS_API_URL}${customerId}`, {
+                                method: "DELETE"
+                            });
+                            if (!response.ok) {
+                                const errData = await response.json().catch(() => ({}));
+                                throw new Error(errData.detail || "Failed to delete customer.");
+                            }
+                            showAlert("success", `Customer "${customerName}" deleted successfully.`);
+                            fetchCustomersList();
+                        } catch (error) {
+                            console.error("Error deleting customer:", error);
+                            showAlert("danger", `Delete Failed: ${error.message}`);
                         }
-                        showAlert("success", `Customer "${customerName}" deleted successfully.`);
-                        fetchCustomersList();
-                    } catch (error) {
-                        console.error("Error deleting customer:", error);
-                        showAlert("danger", `Delete Failed: ${error.message}`);
                     }
-                }
+                });
             });
         });
     }
